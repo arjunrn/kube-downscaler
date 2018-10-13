@@ -37,7 +37,7 @@ def autoscale_resource(resource: pykube.objects.NamespacedAPIObject,
         if exclude:
             logger.debug('%s %s/%s was excluded', resource.kind, resource.namespace, resource.name)
         else:
-            replicas = resource.obj['spec']['replicas']
+            replicas = resource.get_replicas()
 
             if forced_uptime:
                 uptime = "forced"
@@ -69,7 +69,8 @@ def autoscale_resource(resource: pykube.objects.NamespacedAPIObject,
                                 resource.kind, resource.namespace, resource.name, replicas, target_replicas,
                                 uptime, downtime)
                     resource.annotations[ORIGINAL_REPLICAS_ANNOTATION] = str(replicas)
-                    resource.obj['spec']['replicas'] = target_replicas
+                    resource.set_replicas(target_replicas)
+                    resource.save_state()
                     update_needed = True
             if update_needed:
                 if dry_run:
