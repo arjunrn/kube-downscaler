@@ -4,7 +4,9 @@ import pykube
 from typing import FrozenSet
 
 from kube_downscaler import helper
-from kube_downscaler.resources import Deployment, Statefulset, StackSet
+from kube_downscaler.resources.deployment import Deployment
+from kube_downscaler.resources.statefulset import Statefulset
+from kube_downscaler.resources.stackset import StackSet
 
 logger = logging.getLogger(__name__)
 ORIGINAL_REPLICAS_ANNOTATION = 'downscaler/original-replicas'
