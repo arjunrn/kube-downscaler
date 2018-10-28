@@ -1,8 +1,6 @@
-import json
-
 from pykube.objects import NamespacedAPIObject
 
-from .scalable import Scalable, DOWNSCALER_SAVED_ANNOTATION
+from .scalable import Scalable
 
 
 class StackSet(NamespacedAPIObject, Scalable):
@@ -19,8 +17,3 @@ class StackSet(NamespacedAPIObject, Scalable):
 
     def get_replicas(self):
         return int(self.obj['spec']['stackTemplate']['spec']['replicas'])
-
-    def save_state(self):
-        self.annotations[DOWNSCALER_SAVED_ANNOTATION] = json.dumps(
-            self.obj['spec']['stackTemplate']['spec']['horizontalPodAutoscaler'])
-        self.obj['spec']['stackTemplate']['spec']['horizontalPodAutoscaler'] = None
