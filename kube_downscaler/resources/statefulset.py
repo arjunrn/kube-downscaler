@@ -3,7 +3,7 @@ from pykube.objects import NamespacedAPIObject
 from .scalable import Scalable
 
 
-class Statefulset(NamespacedAPIObject, Scalable):
+class StatefulSet(NamespacedAPIObject, Scalable):
     """
     Use latest workloads API version (apps/v1), pykube is stuck with old version
     """

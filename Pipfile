@@ -9,8 +9,8 @@ pytz = "*"
 
 [dev-packages]
 flake8 = "*"
-pytest = "*"
 pytest-cov = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.7"

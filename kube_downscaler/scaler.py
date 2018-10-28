@@ -5,11 +5,13 @@ from typing import FrozenSet
 
 from kube_downscaler import helper
 from kube_downscaler.resources.deployment import Deployment
-from kube_downscaler.resources.statefulset import Statefulset
+from kube_downscaler.resources.statefulset import StatefulSet
 from kube_downscaler.resources.stackset import StackSet
 
 logger = logging.getLogger(__name__)
 ORIGINAL_REPLICAS_ANNOTATION = 'downscaler/original-replicas'
+FORCE_UPTIME_ANNOTATION = 'downscaler/force-uptime'
+EXCLUDE_ANNOTATION = 'downscaler/exclude'
 
 
 def within_grace_period(deploy, grace_period: int):
@@ -24,7 +26,7 @@ def pods_force_uptime(api, namespace: str):
     for pod in pykube.Pod.objects(api).filter(namespace=(namespace or pykube.all)):
         if pod.obj.get('status', {}).get('phase') in ('Succeeded', 'Failed'):
             continue
-        if pod.annotations.get('downscaler/force-uptime') == 'true':
+        if pod.annotations.get(FORCE_UPTIME_ANNOTATION, '').lower() == 'true':
             logger.info('Forced uptime because of %s/%s', pod.namespace, pod.name)
             return True
     return False
@@ -35,7 +37,7 @@ def autoscale_resource(resource: pykube.objects.NamespacedAPIObject,
                        now: datetime.datetime, grace_period: int):
     try:
         # any value different from "false" will ignore the resource (to be on the safe side)
-        exclude = resource.annotations.get('downscaler/exclude', 'false') != 'false'
+        exclude = resource.annotations.get(EXCLUDE_ANNOTATION, 'false').lower() != 'false'
         if exclude:
             logger.debug('%s %s/%s was excluded', resource.kind, resource.namespace, resource.name)
         else:
@@ -79,8 +81,8 @@ def autoscale_resource(resource: pykube.objects.NamespacedAPIObject,
                     logger.info('**DRY-RUN**: would update %s %s/%s', resource.kind, resource.namespace, resource.name)
                 else:
                     resource.update()
-    except Exception:
-        logger.exception('Failed to process %s %s/%s', resource.kind, resource.namespace, resource.name)
+    except Exception as e:
+        logger.exception('Failed to process %s %s/%s : %s', resource.kind, resource.namespace, resource.name, str(e))
 
 
 def autoscale_resources(api, kind, namespace: str,
@@ -107,7 +109,7 @@ def scale(namespace: str, default_uptime: str, default_downtime: str, kinds: Fro
         autoscale_resources(api, Deployment, namespace, exclude_namespaces, exclude_deployments,
                             default_uptime, default_downtime, forced_uptime, dry_run, now, grace_period)
     if 'statefulset' in kinds:
-        autoscale_resources(api, Statefulset, namespace, exclude_namespaces, exclude_statefulsets,
+        autoscale_resources(api, StatefulSet, namespace, exclude_namespaces, exclude_statefulsets,
                             default_uptime, default_downtime, forced_uptime, dry_run, now, grace_period)
     if 'stackset' in kinds:
         autoscale_resources(api, StackSet, namespace, exclude_namespaces, exclude_statefulsets,

@@ -17,24 +17,30 @@ def main():
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
                         level=logging.DEBUG if args.debug else logging.INFO)
 
-    handler = shutdown.GracefulShutdown()
-
     logger.info('Downscaler started with config: %s', args)
 
     if args.dry_run:
         logger.info('**DRY-RUN**: no downscaling will be performed!')
 
+    return run_loop(args.once, args.namespace, args.kind, args.default_uptime, args.default_downtime,
+                    args.exclude_namespace,
+                    args.exclude_deployments, args.exclude_statefulsets, args.grace_period, args.dry_run)
+
+
+def run_loop(run_once, namespace, kinds, default_uptime, default_downtime, exclude_namespaces, exclude_deployments,
+             exclude_statefulsets, grace_period, dry_run):
+    handler = shutdown.GracefulShutdown()
     while True:
         try:
-            scale(args.namespace, args.default_uptime, args.default_downtime,
-                  kinds=frozenset(args.kind),
-                  exclude_namespaces=frozenset(args.exclude_namespaces.split(',')),
-                  exclude_deployments=frozenset(args.exclude_deployments.split(',')),
-                  exclude_statefulsets=frozenset(args.exclude_statefulsets.split(',')),
-                  dry_run=args.dry_run, grace_period=args.grace_period)
-        except Exception:
-            logger.exception('Failed to autoscale')
-        if args.once or handler.shutdown_now:
+            scale(namespace, default_uptime, default_downtime,
+                  kinds=frozenset(kinds),
+                  exclude_namespaces=frozenset(exclude_namespaces.split(',')),
+                  exclude_deployments=frozenset(exclude_deployments.split(',')),
+                  exclude_statefulsets=frozenset(exclude_statefulsets.split(',')),
+                  dry_run=dry_run, grace_period=grace_period)
+        except Exception as e:
+            logger.exception('Failed to autoscale : %s', e)
+        if run_once or handler.shutdown_now:
             return
         with handler.safe_exit():
             time.sleep(args.interval)
