@@ -23,12 +23,12 @@ def main():
         logger.info('**DRY-RUN**: no downscaling will be performed!')
 
     return run_loop(args.once, args.namespace, args.kind, args.default_uptime, args.default_downtime,
-                    args.exclude_namespace,
-                    args.exclude_deployments, args.exclude_statefulsets, args.grace_period, args.dry_run)
+                    args.exclude_namespaces, args.exclude_deployments, args.exclude_statefulsets, args.grace_period,
+                    args.interval, args.dry_run)
 
 
 def run_loop(run_once, namespace, kinds, default_uptime, default_downtime, exclude_namespaces, exclude_deployments,
-             exclude_statefulsets, grace_period, dry_run):
+             exclude_statefulsets, grace_period, interval, dry_run):
     handler = shutdown.GracefulShutdown()
     while True:
         try:
@@ -43,4 +43,4 @@ def run_loop(run_once, namespace, kinds, default_uptime, default_downtime, exclu
         if run_once or handler.shutdown_now:
             return
         with handler.safe_exit():
-            time.sleep(args.interval)
+            time.sleep(interval)
